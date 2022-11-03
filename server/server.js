@@ -4,7 +4,7 @@ require('dotenv').config();
 
 app.use(express.json())
 
-// controllers
+// request handler
 // get
 
 // post
