@@ -11,32 +11,42 @@ const pool = new Pool({
 const endPointReviewsGet = (req, res)=>{
   let page = req.query.page || 1;
   let count = req.query.count || 5;
-  let sort = req.query.sort;
+  let sort = req.query.sort|| '';
   let product_id = req.query.product_id;
-  let queryString = `select * from
-  (select detail.review_id, detail.rating, detail.summary, detail.recommend, detail.response, detail.body, detail.date, detail.reviewer_name, detail.helpfulness, detail.product_id,
-    (select json_agg(pho) from
-    (select id, url from reviews_photos WHERE review_id = detail.review_id AND detail.reported = false)
-     pho
-     ) as photos from reviews_details as detail WHERE product_id = ${product_id}
-  ) review limit ${count} offset ${(page-1)*count}`
+  let queryString =
+  `SELECT json_build_object(
+    'product', ${product_id},
+    'page', ${(page-1)*count},
+    'count', ${count},
+    'results',
+    (SELECT json_agg
+      (json_build_object
+        (
+          'review_id', review_id,
+          'rating', rating,
+          'summary', summary,
+          'recommend', recommend,
+          'response', response,
+          'body', body,
+          'date', TO_CHAR(TO_TIMESTAMP(date/1000), 'YYYY-MM-DD T HH24:MI:SS'),
+          'reviewer_name', reviewer_name,
+          'helpfulness', helpfulness,
+          'photos',
+          (
+            SELECT json_agg(pho) FROM
+            (
+              SELECT id, url from reviews_photos WHERE review_id = details.review_id
+            ) pho
+          )
+        )
+      ) FROM (SELECT * FROM reviews_details WHERE product_id = ${product_id} AND reported = false limit ${count} offset ${(page-1)*count}) as details
+    )
+  )`
+
+
   pool.query(queryString)
   .then((data)=>{
-    let a = {};
-    a.product = product_id;
-    a.page = page;
-    a.count = count;
-    a.result = data.rows.map((ele)=>{
-      ele.date = new Date(parseInt(ele.date));
-      if (ele.photos === null) {
-        ele.photos = [];
-      }
-      if (ele.response === 'null') {
-        ele.response = null;
-      }
-      return ele;
-    });
-    res.send(a);
+    res.send(data.rows[0].json_build_object);
   })
   .catch((err)=>{
     console.log(err);
@@ -46,48 +56,54 @@ const endPointReviewsGet = (req, res)=>{
 
 const endPointMetaGet = (req, res) => {
   let product_id = req.query.product_id;
-  let queryString = `SELECT rating, COUNT (rating) FROM reviews_details WHERE product_id = ${product_id} GROUP BY rating`;
-  let queryString1 = `SELECT recommend, COUNT (recommend) FROM reviews_details WHERE product_id = ${product_id} GROUP BY recommend`;
-  let queryString2 =
-  `SELECT name, id, value FROM characteristics INNER JOIN
-    (SELECT characteristics_id, AVG (value) as value FROM
-      (SELECT characteristics_id, value FROM reviews_characteristics INNER JOIN
-        (SELECT review_id
-        FROM reviews_details WHERE product_id = ${product_id}
-        ) as reviews_id ON reviews_id.review_id = reviews_characteristics.review_id
-      ) as character_val GROUP BY characteristics_id
-    ) AS character_avg ON characteristics.id = character_avg.characteristics_id`
-  Promise.all([pool.query(queryString).then((data)=>{
-    data.rows
-    return data.rows.map((obj)=>{
-      let newObj = {};
-      newObj[obj.rating] = obj.count;
-      return newObj;
-    })
-  }),
-  pool.query(queryString1).then((data)=>{
-    return data.rows.map((obj)=>{
-      let newObj = {};
-      newObj[obj.recommend] = obj.count;
-      return newObj;
-    })
-  }),
-  pool.query(queryString2).then((data)=>{
-    return data.rows
-    .map((obj)=>{
-      let newObj = {};
-      newObj[obj.name] = {id: parseInt(obj.id), value: obj.value};
-      return newObj;
-    })
-  })
-])
+  let queryString =
+    `SELECT json_build_object
+    (
+      'product_id', ${product_id},
+      'ratings',
+      (
+        SELECT json_object_agg
+        (
+          rating,
+          count
+        ) FROM (SELECT rating, COUNT (rating) FROM reviews_details WHERE product_id = ${product_id} GROUP BY rating ORDER BY rating) as ratings
+      ),
+      'recommended',
+      (
+        SELECT json_object_agg
+        (
+          recommend,
+          count
+        ) FROM (SELECT recommend, COUNT (recommend) FROM reviews_details WHERE product_id = ${product_id} GROUP BY recommend) as recommended
+      ),
+      'characteristics',
+      (
+        SELECT json_object_agg
+        (
+          name,
+          json_build_object
+          (
+            'id', id,
+            'value', value
+          )
+        ) FROM
+        (
+          SELECT name, id, value FROM characteristics INNER JOIN
+          (
+            SELECT characteristics_id, AVG (value) as value FROM
+            (
+              SELECT characteristics_id, value FROM reviews_characteristics INNER JOIN
+              (
+                SELECT review_id FROM reviews_details WHERE product_id = ${product_id}
+              ) as reviews_id ON reviews_id.review_id = reviews_characteristics.review_id
+            ) as character_val GROUP BY characteristics_id
+          ) AS character_avg ON characteristics.id = character_avg.characteristics_id ORDER BY characteristics_id
+        ) as characteristics_value
+      )
+    )`
+  pool.query(queryString)
   .then((data)=>{
-    let obj = {}
-    obj["product_id"] = product_id;
-    obj.ratings = data[0];
-    obj.recommended = data[1];
-    obj.characteristics = data[2];
-    res.send(obj);
+    res.send(data.rows[0].json_build_object);
   })
   .catch((err)=>{
     console.log(err);
@@ -109,10 +125,7 @@ const endPointReviewsPost = (req, res)=>{
 
   pool.query(queryString)
   .then((data)=>{
-    return data.rows[0].review_id;
-  })
-  .then((data)=>{
-    let queryString1 = `INSERT INTO reviews_photos (review_id, url) SELECT UNNEST('{${Array(photos.length).fill(data,0)}}' :: INTEGER []), UNNEST('{${photos}}' :: TEXT [])`;
+    let queryString1 = `INSERT INTO reviews_photos (review_id, url) SELECT UNNEST('{${Array(photos.length).fill(data.rows[0].review_id,0)}}' :: INTEGER []), UNNEST('{${photos}}' :: TEXT [])`;
     return pool.query(queryString1)
   })
   .then(()=>{
