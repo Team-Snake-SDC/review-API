@@ -126,7 +126,11 @@ const endPointReviewsPost = (req, res)=>{
   pool.query(queryString)
   .then((data)=>{
     let queryString1 = `INSERT INTO reviews_photos (review_id, url) SELECT UNNEST('{${Array(photos.length).fill(data.rows[0].review_id,0)}}' :: INTEGER []), UNNEST('{${photos}}' :: TEXT [])`;
+
+    let queryString2 = `INSERT INTO reviews_characteristics (characteristics_id, review_id, value) `
+
     return pool.query(queryString1)
+    .then(pool.query(queryString2))
   })
   .then(()=>{
     res.send('added succesfully');
