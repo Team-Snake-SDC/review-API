@@ -28,7 +28,7 @@ const endPointReviewsGet = (req, res)=>{
           'recommend', recommend,
           'response', response,
           'body', body,
-          'date', TO_CHAR(TO_TIMESTAMP(date/1000), 'YYYY-MM-DD T HH24:MI:SS'),
+          'date', TO_CHAR(TO_TIMESTAMP(date/1000), 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
           'reviewer_name', reviewer_name,
           'helpfulness', helpfulness,
           'photos',
@@ -122,18 +122,36 @@ const endPointReviewsPost = (req, res)=>{
   let photos = req.query.photos;
   let characteristics = req.query.characteristics;
   let queryString = `INSERT INTO reviews_details(review_id,product_id, rating, date, summary, body, recommend, reviewer_name, reviewer_email) VALUES (default,${product_id}, ${rating},${new Date().valueOf()},'`+summary+"','"+body+"','"+recommend+"','"+name+"','"+email+"') RETURNING review_id";
-
+  //  console.log(characteristics)
   pool.query(queryString)
   .then((data)=>{
-    let queryString1 = `INSERT INTO reviews_photos (review_id, url) SELECT UNNEST('{${Array(photos.length).fill(data.rows[0].review_id,0)}}' :: INTEGER []), UNNEST('{${photos}}' :: TEXT [])`;
+    let queryString1 =
+    `INSERT INTO reviews_photos (review_id, url)
+      SELECT
+      CAST(${data.rows[0].review_id} AS BIGINT),
+      CAST(url AS text) FROM json_array_elements_text('${photos}') as photos(url)
+    `;
 
-    let queryString2 = `INSERT INTO reviews_characteristics (characteristics_id, review_id, value) `
+    let queryString2 =
+    `INSERT INTO reviews_characteristics (characteristics_id, review_id, value)
+      SELECT
+      CAST(characteristics_id AS BIGINT),
+      CAST(${data.rows[0].review_id} AS BIGINT),
+      CAST(value AS INT) FROM jsonb_each('${characteristics}') as character(characteristics_id, value)
+    `
 
     return pool.query(queryString1)
-    .then(pool.query(queryString2))
-  })
-  .then(()=>{
-    res.send('added succesfully');
+    .then((data)=>{
+      console.log(data.rows)
+      return pool.query(queryString2)
+    })
+    .then(data=>{
+      console.log('here', data.rows)
+      res.send('added data');
+    })
+    .catch((err)=>{
+      console.log(err);
+    })
   })
   .catch((err)=>{
     console.log(err);

@@ -1,0 +1,48 @@
+`SELECT json_build_object
+			(
+				'question', ${id},
+				'count', ${count},
+				'page', ${page},
+				'results',
+				(SELECT json_agg
+						(
+							json_build_object
+							(
+								'answer_id', id,
+								'body', body,
+								'date', TO_CHAR(TO_TIMESTAMP(date_written/1000), 'YYYY-MM-DD T HH24:MI:SS'),
+								'answerer_name', answerer_name,
+								'helpfulness', helpful,
+								'photos',
+									(json_agg
+										(json_build_object
+											(
+												'id', id,
+												'url', url
+											)
+										)
+									) FROM answer_photos where answer_id = answers.id
+							)
+						) FROM answers where answers.question_id = ${id}`
+				)
+			)
+
+
+
+
+
+
+
+
+
+
+
+Message Parker Sturtevant
+
+
+
+
+
+
+
+
