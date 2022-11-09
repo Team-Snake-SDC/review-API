@@ -1,11 +1,11 @@
 const Pool = require('pg').Pool
 require('dotenv').config();
 const pool = new Pool({
-  user:"reviews",
-  host:'localhost',
-  database: "reviews",
-  password: "wowthisispassword123",
-  port: 5432
+  user: process.env.USER,
+  host: process.env.HOST,
+  database: process.env.DB,
+  password: process.env.PASSWORD,
+  port: process.env.DBPORT
 })
 
 const endPointReviewsGet = (req, res)=>{
