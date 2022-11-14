@@ -11,8 +11,22 @@ const pool = new Pool({
 const endPointReviewsGet = (req, res)=>{
   let page = req.query.page || 1;
   let count = req.query.count || 5;
-  let sort = req.query.sort|| '';
   let product_id = req.query.product_id;
+  let sort;
+  if (req.query.sort) {
+    if (req.query.sort === 'helpful') {
+      sort = 'ORDER BY helpfulness';
+    }
+    if (req.query.sort === 'newest') {
+      sort = 'ORDER BY date';
+    }
+    if (req.query.sort === relevant) {
+      sort = '';
+    }
+  } else {
+    sort = '';
+  }
+
   let queryString =
   `SELECT json_build_object(
     'product', ${product_id},
@@ -39,7 +53,7 @@ const endPointReviewsGet = (req, res)=>{
             ) pho
           )
         )
-      ) FROM (SELECT * FROM reviews_details WHERE product_id = ${product_id} AND reported = false limit ${count} offset ${(page-1)*count}) as details
+      ) FROM (SELECT * FROM reviews_details WHERE product_id = ${product_id} AND reported = false ${sort} limit ${count} offset ${(page-1)*count}) as details
     )
   )`
 
