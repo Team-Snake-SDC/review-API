@@ -29,7 +29,9 @@ npm install
 psql -U YOUR_USERNAME -d DATABASE_NAME -h localhost  -p 5432 -f ./db/schema.sql
 ```
 During this process make sure you fix the csv file location on schema.sql for each corresponding file
+
 3. follow the example.env file to make your own .env file
+
 4. To start the microservice
 ```
 npm run server
