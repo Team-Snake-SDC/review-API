@@ -38,4 +38,4 @@ npm run server
 ```
 
 ## Description
-Data was hosted with PostgreSQL database. To meet the business requirement, reducing latency was our priority. we used indexing and JSON aggregate function to shorten the search time when request were made. To handle 1000 request/s, application was deployed on AWS EC2 instance with load balancing with Nginx. This application was tested with K6. In production, the latency was tested with loader.io and all the queries were handled within 20ms which was well under the business requirement of 100ms for 1000 requests/s.
+Data was hosted with PostgreSQL database. To meet the business requirement, reducing latency was our priority. we used indexing and JSON aggregate function to shorten the search time when request were made. To handle 1000 request/s, application was deployed on AWS EC2 instance with load balancing with Nginx. This application was tested with K6. In production, the latency was tested with loader.io and all the queries were handled within 20ms which was faster than the business requirement of 100ms for 1000 requests/s.
