@@ -3,7 +3,7 @@
 ## Table of Contents
 - [About](#about)
 - [Installation](#installation)
-- [Search](#description)
+- [Description](#description)
 
 ## About
 
