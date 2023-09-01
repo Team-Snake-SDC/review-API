@@ -7,7 +7,7 @@
 
 ## About
 
-Atelier review-API was built with PostgreSQL and Express.js. This backend application connects review database with Atelier e-commerce website. Previously, all the data for Atelier e-commerce website was hosted on one API, taking about 50ms to receive data. As web traffic increased, it was necessary to scale the API services into microservices for a better response time and a better experience for the customers to meet a business requirement of handling 1000 request/s with at least 100ms response time.  
+Atelier review-API was built with PostgreSQL and Express.js. This backend application connects review database with Atelier e-commerce website. Previously, all the data for Atelier e-commerce website was hosted on one API, taking about 50ms to receive data. As web traffic increased, it was necessary to scale the API services into microservices for a better response time and a better experience for the customers.
 
 ## Tech Stack
 ![JavaScript](https://img.shields.io/badge/javascript-%23323330.svg?style=for-the-badge&logo=javascript&logoColor=%23F7DF1E)
@@ -38,4 +38,4 @@ npm run server
 ```
 
 ## Description
-Data was hosted with PostgreSQL database. To meet the business requirement, reducing latency was our priority. we used indexing and JSON aggregate function to shorten the search time when request were made. To handle 1000 request/s, application was deployed on AWS EC2 instance with load balancing with Nginx. This application was tested with K6. In production, the latency was tested with loader.io and all the queries were handled within 20ms.
+Data was hosted with PostgreSQL database. To meet the business requirement, reducing latency was our priority. we used indexing and JSON aggregate function to shorten the search time when request were made. To handle 1000 request/s, application was deployed on AWS EC2 instance with load balancing with Nginx. This application was tested with K6. In production, the latency was tested with loader.io and all the queries were handled within 20ms which was well under the business requirement of 100ms for 1000 requests/s.
